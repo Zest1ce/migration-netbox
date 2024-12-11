@@ -21,11 +21,6 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 # Настройки для phpIPAM
 from credential import PHPIPAM_URL, PHPIPAM_APP_ID, PHPIPAM_API_TOKEN, NETBOX_URL, NETBOX_API_TOKEN
-# SSL (Вернуться к этому, если будет потребность в безопасном подключении)
-#ssl_cert_path = '/usr/local/share/ca-certificates/ipam.mosgortrans.com.crt'
-# if not os.path.exists(ssl_cert_path):
-        #     raise FileNotFoundError(f"Сертификат не найден: {ssl_cert_path}") - это подставляется внутри try в проверке конекта к API
-# Время на начало исполнения скрипта
 start_time = datetime.now()
 # Хедеры для API запросов
 HEADERS_PHPIPAM = {
@@ -74,7 +69,6 @@ def check_phpipam_connection(phpipam_api_endpoint):
             return None
     except requests.exceptions.RequestException as error_api:
         print(f"Произошла ошибка при подключении к API phpIPAM: {error_api}")
-# check_phpipam_connection('sections')
 # Проверка соединения с API NetBOX
 @backoff.on_exception(backoff.expo,
                       (requests.exceptions.RequestException, 
@@ -96,7 +90,6 @@ def check_netbox_connection(netbox_api_endpoint):
             return None
     except requests.exceptions.RequestException as error_api:
         print(f"Произошла ошибка при подключении к API NetBOX: {error_api}")
-# check_netbox_connection('status')
 # GET запрос к phpIPAM на получение подсетей
 @backoff.on_exception(backoff.expo,
                       (requests.exceptions.RequestException, 
@@ -213,9 +206,20 @@ def create_site_in_netbox(location):
         return None
 # Создание VLANs из данных phpIPAM в NetBOX
 def create_vlan_in_netbox(vlan_data):
+    # Проверяет существование VLAN в NetBox по VID и возвращает его ID, если найден.
+    def get_existing_vlan(vlan_vid):
+        response = requests.get(f"{NETBOX_URL}/ipam/vlans/?vid={vlan_vid}", headers=HEADERS_NETBOX, verify=False)
+        if response.status_code == 200 and response.json()["count"] > 0:
+            return response.json()["results"][0]["id"]
+        return None
     """Создание VLAN в NetBox."""
     if not vlan_data:
         return None
+    # Проверяем, существует ли VLAN
+    existing_vlan_id = get_existing_vlan(int(vlan_data["number"]))
+    if existing_vlan_id:
+        print(f"VLAN {vlan_data['number']} {vlan_data['name']} уже существует.")
+        return existing_vlan_id
     vlan_payload = {
         "name": vlan_data["name"],
         "vid": int(vlan_data["number"]),
@@ -275,7 +279,7 @@ def create_subnets_in_netbox():
             "site": site_id,
             "is_pool": bool(int(subnet.get("isPool", 0))),
             "status": "active",  # Устанавливаем статус подсети
-            "vlan": {"vid": int(vlan_netbox_id,["number"])} if vlan_id else None,
+            "vlan": vlan_netbox_id,
         }
         # Отправляем данные в NetBox
         response = requests.post(f"{NETBOX_URL}/ipam/prefixes/", headers=HEADERS_NETBOX, json=prefix_data, verify=False)
@@ -344,7 +348,7 @@ def main_function():
     else:
         print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
-    #create_subnets_in_netbox()
+    create_subnets_in_netbox()
 
 main_function()
 
