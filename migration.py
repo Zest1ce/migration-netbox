@@ -314,6 +314,30 @@ def create_subnets_in_netbox():
     bar.finish()
     print(f"\nВсего обработано подсетей: {processed_count} из {total_subnets}")
 
+def generate_location_json():
+    """
+    Генерирует JSON-файл с данными о локациях из JSON-файла с подсетями.
+    """
+    output_file_path = "./data/phpipam_data_location.json"
+    with open("./data/phpipam_data_subnet.json", "r", encoding="utf-8") as file:
+        subnets = json.load(file).get("data", [])
+
+    unique_locations = {}
+    for subnet in subnets:
+        location = subnet.get("location")
+        if location:
+            location_id = location["id"]
+            if location_id not in unique_locations:
+                unique_locations[location_id] = location
+
+    # Формируем данные для записи
+    locations_data = {"data": list(unique_locations.values())}
+
+    # Сохраняем в файл
+    with open(output_file_path, "w", encoding="utf-8") as output_file:
+        json.dump(locations_data, output_file, ensure_ascii=False, indent=4)
+
+    print(f"Данные о локациях успешно сохранены в {output_file_path}")
 def main_function():
     # Запуск функций проверки коннекта к API
     check_phpipam_connection('sections')
@@ -354,8 +378,10 @@ def main_function():
         print("Данные успешно сохранены в файл phpipam_data_devices.json")
     else:
         print("Не удалось получить данные из phpIPAM.")
+    # Запуск функции создания json для локации по данным из выгрузки подсетей
+    generate_location_json()
     # Запуск обработчика json
-    create_subnets_in_netbox()
+    #create_subnets_in_netbox()
 
 main_function()
 
