@@ -313,28 +313,6 @@ def create_subnets_in_netbox():
         bar.next()
     bar.finish()
     print(f"\nВсего обработано подсетей: {processed_count} из {total_subnets}")
-# POST запрос к NetBOX на получение подсетей
-@backoff.on_exception(backoff.expo,
-                      (requests.exceptions.RequestException, 
-                       JSONDecodeError), 
-                       max_tries=5)
-def post_netbox_subnets(netbox_api_endpoint):
-    try:
-        url = f"{NETBOX_URL}/{netbox_api_endpoint}" # Формируем URL для запроса данных по эндпоинту
-        print(f"Обработка запроса по эндпоинту: {url}")
-        response = requests.post(url, 
-                                headers=HEADERS_NETBOX, 
-                                verify=False)
-        if response.status_code == 200:
-            print("Подсети успешно добавлены в NetBOX.")
-            return response.json()
-        else:
-            print(f"Ошибка при отправке данных: {response.status_code} - {response.reason}")
-            print(response.text)
-            return None
-    except requests.exceptions.RequestException as error_api:
-        print(f"Произошла ошибка при подключении к эндпоинту NetBOX: {error_api}")
-# post_netbox_subnets('ipam/prefixes/')
 
 def main_function():
     # Запуск функций проверки коннекта к API
