@@ -150,6 +150,26 @@ def get_phpipam_vlans(phpipam_api_endpoint):
             return None
     except requests.exceptions.RequestException as error_api:
         print(f"Произошла ошибка при подключении к эндпоинту phpIPAM: {error_api}")
+# GET запрос к phpIPAM на получение Devices
+@backoff.on_exception(backoff.expo,
+                      (requests.exceptions.RequestException, 
+                       JSONDecodeError), 
+                       max_tries=5)
+def get_phpipam_devices(phpipam_api_endpoint):
+    try:
+        url = f"{PHPIPAM_URL}/{PHPIPAM_APP_ID}/{phpipam_api_endpoint}/" # Формируем URL для запроса данных о секции
+        print(f"Обработка запроса по эндпоинту: {url}")
+        response = requests.get(url, headers=HEADERS_PHPIPAM, verify=False)
+
+        if response.status_code == 200:
+            print("Успешный запрос данных из phpIPAM.")
+            return response.json()
+        else:
+            print(f"Ошибка при запросе данных: {response.status_code}")
+            print(response.text)
+            return None
+    except requests.exceptions.RequestException as error_api:
+        print(f"Произошла ошибка при подключении к эндпоинту phpIPAM: {error_api}")
 # Функция для открытия разных json файлов
 def load_data_from_json(file_path):
     """Загрузка данных из JSON-файла."""
@@ -347,11 +367,19 @@ def main_function():
         print("Данные успешно сохранены в файл phpipam_data_vlans.json")
     else:
         print("Не удалось получить данные из phpIPAM.")
+    # Запуск функции запроса к phpIPAM для получения VLAN и сохранение json файла
+    devices_data = get_phpipam_devices('devices/all')
+    if devices_data:
+        # Сохранение данных в файл JSON с отступами для читаемости
+        with open("./data/phpipam_data_devices.json", "w", encoding="utf-8") as json_file:
+            json.dump(devices_data, json_file, ensure_ascii=False, indent=4)
+        print("Данные успешно сохранены в файл phpipam_data_devices.json")
+    else:
+        print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
     create_subnets_in_netbox()
 
 main_function()
 
-
-
 print(f"Исполнение скрипта заняло: {datetime.now() - start_time}")
+print("_____________________________________________________________________________________________________________________")
