@@ -332,12 +332,8 @@ def generate_location_json():
 
     # Формируем данные для записи
     locations_data = {"data": list(unique_locations.values())}
+    return locations_data
 
-    # Сохраняем в файл
-    with open(output_file_path, "w", encoding="utf-8") as output_file:
-        json.dump(locations_data, output_file, ensure_ascii=False, indent=4)
-
-    print(f"Данные о локациях успешно сохранены в {output_file_path}")
 def main_function():
     # Запуск функций проверки коннекта к API
     check_phpipam_connection('sections')
@@ -351,7 +347,7 @@ def main_function():
         print("Данные успешно сохранены в файл phpipam_data_subnet.json")
     else:
         print("Не удалось получить данные из phpIPAM.")
-    # Запуск функции запроса к phpIPAM для получения подсетей и сохранение json файла
+    # Запуск функции запроса к phpIPAM для получения ip адресов и сохранение json файла
     addresses_data = get_phpipam_addresses('addresses/all')
     if addresses_data:
         # Сохранение данных в файл JSON с отступами для читаемости
@@ -379,7 +375,14 @@ def main_function():
     else:
         print("Не удалось получить данные из phpIPAM.")
     # Запуск функции создания json для локации по данным из выгрузки подсетей
-    generate_location_json()
+    locations_data = generate_location_json()
+    if locations_data:
+        # Сохранение данных в файл JSON с отступами для читаемости
+        with open("./data/phpipam_data_location.json", "w", encoding="utf-8") as json_file:
+            json.dump(locations_data, json_file, ensure_ascii=False, indent=4)
+        print(f"Данные о локациях успешно сохранены в phpipam_data_location.json")
+    else:
+        print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
     #create_subnets_in_netbox()
 
