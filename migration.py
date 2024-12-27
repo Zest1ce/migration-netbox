@@ -438,7 +438,7 @@ def main_function():
     else:
         print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
-    #create_subnets_in_netbox()
+    create_subnets_in_netbox()
     create_addresses_in_netbox()
 
 main_function()
