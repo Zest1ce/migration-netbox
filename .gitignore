@@ -166,5 +166,5 @@ data/
 credential.py
 getSection.py
 getSubnets.py
-gpt.txt
+_search.py
 test.py

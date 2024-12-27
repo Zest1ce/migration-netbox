@@ -264,28 +264,27 @@ def create_vlan_in_netbox(vlan_data):
                        JSONDecodeError), 
                        max_tries=5)
 def create_subnets_in_netbox():
-    print('Запуск обработчика json')
+    print('Запуск обработчика json - добавление данных: subnets, vlans & locations')
     # Открываем файл и читаем его содержимое
-    subnets_data = load_data_from_json('./data/phpipam_data_subnet.json')
+    subnets_data = load_data_from_json('./data/phpipam_data_subnet.json').get("data", [])
     vlans_data = {
         vlan["vlanId"]: vlan 
         for vlan in load_data_from_json('./data/phpipam_data_vlans.json').get("data", [])
     }
     # Определяем диапазон ID
     id_range = (8, 5000)
-    subnets = subnets_data.get("data", [])
-    total_subnets = len([s for s in subnets if id_range[0] <= int(s["id"]) <= id_range[1]])
+    total_subnets = len([s for s in subnets_data if id_range[0] <= int(s["id"]) <= id_range[1]])
     bar = IncrementalBar("Обработка подсетей", max=total_subnets)
 
     processed_count = 0
-    for subnet in subnets:
+    for subnet in subnets_data:
         subnet_id = int(subnet["id"])
         if not (id_range[0] <= subnet_id <= id_range[1]):
             continue
 
         # Создаем сайт на основе информации о локации
         site_id = create_site_in_netbox(subnet.get("location"))
-
+        
         # Проверяем VLAN и создаем его, если связан с подсетью
         vlan_id = subnet.get("vlanId")
         vlan_netbox_id = None
@@ -313,6 +312,61 @@ def create_subnets_in_netbox():
         bar.next()
     bar.finish()
     print(f"\nВсего обработано подсетей: {processed_count} из {total_subnets}")
+
+# Перенос IP адрессов(Обработчик для запросов из phpIPAM в NetBOX) 
+@backoff.on_exception(backoff.expo,
+                      (requests.exceptions.RequestException, 
+                       JSONDecodeError), 
+                       max_tries=5)
+def create_addresses_in_netbox():
+    print('Запуск обработчика json - добавление данных: ip адреса')
+    subnets_data = load_data_from_json('./data/phpipam_data_subnet.json').get("data", [])
+    ip_data = load_data_from_json('./data/phpipam_data_addresses.json').get("data", [])
+
+    # Создание словаря для быстрого доступа к маске по subnetId
+    subnet_id_to_mask = {
+        subnet["id"]: subnet["mask"] for subnet in subnets_data
+    }
+
+    # Определяем диапазон ID
+    id_range = (8, 20000)
+    total_ip = len([s for s in ip_data if id_range[0] <= int(s["id"]) <= id_range[1]])
+    bar = IncrementalBar("Обработка IP адресов", max=total_ip)
+    processed_count = 0
+    for ip in ip_data:
+        subnet_id = ip.get("subnetId")
+        ip_address = ip.get("ip")
+        ip_id = int(ip["id"])
+        if not (id_range[0] <= ip_id <= id_range[1]):
+            continue
+        
+        # Получаем маску из данных подсети
+        mask = subnet_id_to_mask.get(subnet_id)
+        # Формируем адрес в формате ip/mask
+        address = f"{ip_address}/{mask}"
+        # Очищаем значения hostname от символом которые не принимает Netbox, в netbox нет hostname, вместо него dns name
+        dns_name = ip.get("hostname", "") or ""
+        dns_name = translit(dns_name, 'ru', reversed=True)
+        dns_name = re.sub(r'[^a-zA-Z0-9._*-]', '', dns_name)
+        # Формируем данные для отправки в NetBox
+        ip_data = {
+            "address": address,#ip["ip"]
+            "status": "active",
+            "description": ip.get("description", "") or "",
+            "dns_name": dns_name,
+            "comments": ip.get("hostname", "") or "",
+        }
+        # Отправляем данные в NetBox
+        response = requests.post(f"{NETBOX_URL}/ipam/ip-addresses/", headers=HEADERS_NETBOX, json=ip_data, verify=False)
+        if response.status_code == 201:
+            print(f"IP адрес {ip_data['address']} успешно создан в NetBox.")
+            processed_count += 1
+        else:
+            print(f"Ошибка при создании IP адреса {ip_data['address']}: {response.status_code}")
+            print(response.text)
+        bar.next()
+    bar.finish()
+    print(f"\nВсего обработано IP адресов: {processed_count} из {total_ip}")
 
 def generate_location_json():
     """
@@ -380,11 +434,12 @@ def main_function():
         # Сохранение данных в файл JSON с отступами для читаемости
         with open("./data/phpipam_data_location.json", "w", encoding="utf-8") as json_file:
             json.dump(locations_data, json_file, ensure_ascii=False, indent=4)
-        print(f"Данные о локациях успешно сохранены в phpipam_data_location.json")
+        print(f"Данные успешно сохранены в phpipam_data_location.json")
     else:
         print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
     #create_subnets_in_netbox()
+    create_addresses_in_netbox()
 
 main_function()
 
