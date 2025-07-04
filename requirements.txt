@@ -1,3 +1,10 @@
-requests
-progress.bar
-transliterate
+backoff            >= 2.2.1
+certifi            >= 2024.8.30
+charset-normalizer >= 3.4.0
+idna               >= 3.10
+pip                >= 24.0
+progress           >= 1.6
+requests           >= 2.32.3
+six                >= 1.17.0
+transliterate      >= 1.10.2
+urllib3            >= 2.2.3
