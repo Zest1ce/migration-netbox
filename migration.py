@@ -124,13 +124,13 @@ def main_function():
         # Сохранение данных в файл JSON с отступами для читаемости
         with open("./data/phpipam_data_location.json", "w", encoding="utf-8") as json_file:
             json.dump(locations_data, json_file, ensure_ascii=False, indent=4)
-        print(f"Данные успешно сохранены в phpipam_data_location.json")
+        print(f"Данные успешно сохранены в файл phpipam_data_location.json")
     else:
         print("Не удалось получить данные из phpIPAM.")
     # Запуск обработчика json
-    create_subnets_in_netbox()
-    create_addresses_in_netbox()
-    create_devices_in_netbox()
+    #create_subnets_in_netbox()
+    #create_addresses_in_netbox()
+    #create_devices_in_netbox()
 
 main_function()
 

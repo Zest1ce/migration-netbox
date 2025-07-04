@@ -1,3 +1,41 @@
+from typing import List, Dict, Optional
+from datetime import datetime
+from collections import Counter
+from json.decoder import JSONDecodeError
+from progress.bar import IncrementalBar
+from transliterate import translit
+import re
+import requests
+import json
+import ssl
+import urllib3
+import ipaddress
+import backoff
+import logging
+import certifi
+import ssl
+import os
+import sys
+
+# Вызов функции load_data_from_json
+from load_data_from_json import load_data_from_json
+# Вызов функции clean_slug
+from clean_slug import clean_slug
+# Вызов функции get_phpipam_devices_type
+from get_phpipam_devices_type import get_phpipam_devices_type
+# Получение кредов
+from credential import PHPIPAM_URL, PHPIPAM_APP_ID, PHPIPAM_API_TOKEN, NETBOX_URL, NETBOX_API_TOKEN
+# Хедеры для API запросов
+HEADERS_PHPIPAM = {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'token': PHPIPAM_API_TOKEN
+}
+HEADERS_NETBOX = {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'Authorization': f'Token {NETBOX_API_TOKEN}'
+}
 @backoff.on_exception(backoff.expo,
                       (requests.exceptions.RequestException, 
                        JSONDecodeError), 

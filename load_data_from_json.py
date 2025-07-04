@@ -1,3 +1,22 @@
+from typing import List, Dict, Optional
+from datetime import datetime
+from collections import Counter
+from json.decoder import JSONDecodeError
+from progress.bar import IncrementalBar
+from transliterate import translit
+import re
+import requests
+import json
+import ssl
+import urllib3
+import ipaddress
+import backoff
+import logging
+import certifi
+import ssl
+import os
+import sys
+
 # Функция для открытия разных json файлов
 def load_data_from_json(file_path):
     """Загрузка данных из JSON-файла."""
