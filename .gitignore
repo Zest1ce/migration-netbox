@@ -163,6 +163,7 @@ cython_debug/
 # my settings
 boxenv/
 data/
+archive/
 credential.py
 getSection.py
 getSubnets.py
