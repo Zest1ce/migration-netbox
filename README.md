@@ -5,7 +5,7 @@ Migrating data from phpIPAM to Netbox
 ```bash
 # API configuration for NetBox
 NETBOX_URL = "https://netbox.yoursite.com/api" # netbox service URL
-NETBOX_API_TOKEN = "" # Token for accessing the phpIPAM API
+NETBOX_API_TOKEN = "" # Token for accessing the NetBox API
 ```
 ```bash
 # API configuration for phpIPAM
