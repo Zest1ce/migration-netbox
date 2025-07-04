@@ -1,6 +1,11 @@
 # migration-netbox
 Migrating data from phpIPAM to Netbox
 
+# Installing project dependencies
+```bash
+pip install -r requirements.txt
+```
+
 # Create a credential.py file and provide the following values
 ```bash
 # API configuration for NetBox
